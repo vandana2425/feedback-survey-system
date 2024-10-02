@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Replace with your actual backend API URL
-const API_URL = 'http://localhost:5001/api';
+const API_URL = 'https://feedback-survey-system.onrender.com';
 
 // Create an axios instance with base URL
 const api = axios.create({

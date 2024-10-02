@@ -3,7 +3,7 @@ import authService from './authService'; // Import authService for token refresh
 
 // Create an instance of axios with the base URL of your backend
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api', // Replace with your backend URL
+  baseURL: 'https://feedback-survey-system.onrender.com', // Replace with your backend URL
 });
 
 // Add a response interceptor to handle token expiration and auto-refresh

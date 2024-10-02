@@ -11,7 +11,22 @@ const responseRoutes = require('./routes/responseRoutes');
 
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:3000', credentials: true, }));
+const allowedOrigins = ['http://localhost:3000', 'https://feedback-survey-system-1.onrender.com'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin, like mobile apps or curl requests
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true); // Allow the request if it's from an allowed origin
+    } else {
+      callback(new Error('Not allowed by CORS')); // Reject the request otherwise
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+}));
 app.use(express.json());
 
 // URL encode the password

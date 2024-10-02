@@ -4,7 +4,7 @@ let navigateRef = null; // Global reference for the navigate function
 
 // Create an instance of axios with the base URL of your backend
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api', // Replace with your backend URL
+  baseURL: 'https://feedback-survey-system.onrender.com', // Replace with your backend URL
 });
 
 // Function to setup Axios interceptors with navigate function
