@@ -56,6 +56,9 @@ function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Helper function to validate email
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Both email and password are required');
@@ -88,9 +91,12 @@ function LoginPage() {
         fullWidth
         margin="normal"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        error={!!error && !email}
-        helperText={(!email && error) ? 'Email is required' : ''}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          setError(''); // Clear error on input change
+        }}
+        error={!!error && (!email || !isValidEmail(email))} // Validate email format
+        helperText={(!email && error) ? 'Email is required' : (!isValidEmail(email) && 'Invalid email format')}
         className={classes.inputField}
         FormHelperTextProps={{ className: classes.helperText }}
       />
@@ -101,7 +107,10 @@ function LoginPage() {
         fullWidth
         margin="normal"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => {
+          setPassword(e.target.value);
+          setError(''); // Clear error on input change
+        }}
         error={!!error && !password}
         helperText={(!password && error) ? 'Password is required' : ''}
         className={classes.inputField}

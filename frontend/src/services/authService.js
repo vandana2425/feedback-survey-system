@@ -1,44 +1,50 @@
 import axios from 'axios';
 
-// Replace with your actual backend API URL
-const API_URL = 'https://feedback-survey-system.onrender.com';
+let navigateRef = null; // Global reference for the navigate function
 
-// Create an axios instance with base URL
+// Create an instance of axios with the base URL from environment variables
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: process.env.REACT_APP_API_BASE_URL,
 });
 
-// Add a request interceptor to include the Authorization token in all requests
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// Function to setup Axios interceptors with navigate function
+export const setupAxiosInterceptors = (navigate) => {
+  navigateRef = navigate; // Store the navigate function globally
 
-// Add a response interceptor to handle token expiration and auto-logout
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      console.error('Token expired or unauthorized access');
-      authService.logout();  // Clear auth data
-      window.location.href = '/'; // Redirect to login
-    }
-    return Promise.reject(error);
-  }
-);
+  // Add a request interceptor to include the Authorization token in all requests
+  api.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
 
-// Register a new user
-const register = async (email, password) => {
+  // Add a response interceptor to handle token expiration and logout the user
+  api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response && error.response.status === 401) {
+        console.error('Token expired or unauthorized access');
+        logout(); // Clear auth data and redirect to login
+        if (navigateRef) {
+          navigateRef('/login');
+        } else {
+          window.location.href = '/login'; // Redirect if navigation is not available
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+};
+
+// Function to register a new user
+export const register = async (userData) => {
   try {
-    const response = await api.post('/users/register', { email, password });
+    const response = await api.post('/users/register', userData);
     return response.data;
   } catch (error) {
     console.error('Registration error:', error.response?.data || error.message);
@@ -46,18 +52,15 @@ const register = async (email, password) => {
   }
 };
 
-// Log in an existing user
-const login = async (email, password) => {
+// Function to log in a user
+export const login = async (credentials) => {
   try {
-    const response = await api.post('/users/login', { email, password });
+    const response = await api.post('/users/login', credentials);
     const { token, user } = response.data;
-
     if (token) {
-      // Store token and user details in localStorage
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('authUser', JSON.stringify(user));
+      localStorage.setItem('authToken', token); // Store token
+      localStorage.setItem('authUser', JSON.stringify(user)); // Store user info
     }
-
     return { token, user };
   } catch (error) {
     console.error('Login error:', error.response?.data || error.message);
@@ -65,43 +68,63 @@ const login = async (email, password) => {
   }
 };
 
-// Log out the user by clearing stored data
-const logout = () => {
+// Function to log out the user
+export const logout = () => {
   localStorage.removeItem('authToken');
-  localStorage.removeItem('refreshToken');
   localStorage.removeItem('authUser');
   window.location.href = '/';
   console.log('User logged out successfully.');
 };
 
-// Get the token from localStorage
-const getToken = () => {
-  return localStorage.getItem('authToken');
+// Function to check if the user is authenticated
+export const isAuthenticated = () => {
+  const token = localStorage.getItem('authToken');
+  const user = getCurrentUser();
+  return !!token && !!user;
 };
 
 // Get the currently logged-in user from localStorage
-const getCurrentUser = () => {
+export const getCurrentUser = () => {
   const user = localStorage.getItem('authUser');
-  if (user && user !== 'undefined') {
-    try {
-      return JSON.parse(user);
-    } catch (error) {
-      console.error('Error parsing authUser:', error);
-      return null;
-    }
+  return user ? JSON.parse(user) : null;
+};
+
+// Function to get a specific form by ID
+export const getFormById = async (formId) => {
+  try {
+    const response = await api.get(`/forms/${formId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching form by ID:', error.response?.data || error.message);
+    throw error;
   }
-  return null;
 };
 
-// Check if the user is authenticated by checking the presence of user data
-const isAuthenticated = () => {
-  const user = getCurrentUser();
-  return !!user && !!getToken(); // Check if token and user exist
+// Function to create a new form
+export const createForm = async (formData) => {
+  try {
+    const response = await api.post('/forms/create', formData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating form:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
-// Fetch the dashboard data using the JWT token
-const getDashboard = async () => {
-  const token = getToken();
+// Function to get all forms
+export const getForms = async () => {
+  try {
+    const response = await api.get('/forms');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching forms:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Function to fetch dashboard data using JWT token
+export const getDashboard = async () => {
+  const token = localStorage.getItem('authToken');
   if (!token) {
     throw new Error('User is not authenticated');
   }
@@ -109,10 +132,9 @@ const getDashboard = async () => {
   try {
     const response = await api.get('/dashboard', {
       headers: {
-        Authorization: `Bearer ${token}`, // Attach the token in the Authorization header
+        Authorization: `Bearer ${token}`,
       },
     });
-
     return response.data;
   } catch (error) {
     console.error('Error fetching dashboard data:', error.response?.data || error.message);
@@ -120,51 +142,44 @@ const getDashboard = async () => {
   }
 };
 
-// Optionally, you can add a method for refreshing tokens if your backend supports it
-const refreshToken = async () => {
-  const token = getToken();
-  if (!token) {
-    throw new Error('User is not authenticated');
+// Helper function to handle errors globally
+export const handleErrors = (error) => {
+  console.error('Error:', error.response?.data || error.message);
+  if (error.response && error.response.status === 401) {
+    logout();
+    window.location.href = '/login';
   }
+};
 
+export const getToken = () => {
+  return localStorage.getItem('authToken');
+};
+
+export const refreshToken = async (refreshToken) => {
   try {
-    const response = await api.post('/refresh-token', {}, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.data.token) {
-      localStorage.setItem('authToken', response.data.token); // Update the token in localStorage
-    }
-
-    return response.data;
+    const response = await api.post('/users/refresh-token', { token: refreshToken });
+    return response.data.token;
   } catch (error) {
     console.error('Error refreshing token:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// Helper function to handle errors globally
-const handleErrors = (error) => {
-  console.error('Error:', error.response?.data || error.message);
-  if (error.response && error.response.status === 401) {
-    console.error('Token expired or unauthorized access. Logging out...');
-    logout(); // Logout if unauthorized or token is invalid
-  }
-};
 
-// Export the auth service methods
-const authService = {
+export const authService = {
+  setupAxiosInterceptors,
   register,
   login,
-  getToken,
   logout,
   getCurrentUser,
   isAuthenticated,
+  createForm,
+  getFormById,
+  getForms,
   getDashboard,
-  refreshToken,
   handleErrors,
+  getToken,
+  refreshToken,
 };
 
 export default authService;

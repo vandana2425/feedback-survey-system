@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import HomePage from './components/HomePage';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
@@ -11,10 +11,12 @@ import FormPage from './components/Form/FormPage';
 import FormCreatedPage from './components/Form/FormCreatedPage';
 import Layout from './components/layout/Layout';
 import ResponsesPage from './components/Response/ResponsesPage';
-import { setupAxiosInterceptors } from './apiServices';
+import { setupAxiosInterceptors } from './services/authService';
+import { useAuth } from './context/AuthContext'; // To get auth context
 
 function App() {
   const navigate = useNavigate(); // Get the navigate function from react-router
+  const { auth } = useAuth(); // Access the authentication state
 
   useEffect(() => {
     // Setup Axios interceptors to handle token expiration and redirection
@@ -24,35 +26,44 @@ function App() {
   return (
     <div>
       <Routes>
-        {/* Public routes */}
+        {/* Public routes wrapped inside Layout for consistent structure */}
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/form-created" element={<FormCreatedPage />} />
-        <Route path="/responses/:formId" element={<ResponsesPage />} />
+          
+          {/* Redirect to dashboard if user is logged in */}
+          <Route 
+            path="/login" 
+            element={auth ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
+          />
+          <Route 
+            path="/register" 
+            element={auth ? <Navigate to="/dashboard" replace /> : <RegisterPage />} 
+          />
+          
+          <Route path="/form-created" element={<FormCreatedPage />} />
+          <Route path="/responses/:formId" element={<ResponsesPage />} />
 
-        {/* Private routes */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <PrivateRoute>
-              <DashboardPage />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/create-form" 
-          element={
-            <PrivateRoute>
-              <CreateFormPage />
-            </PrivateRoute>
-          } 
-        />
-        <Route path="/form/:formId" element={<FormPage />} />
+          {/* Private routes (Protected with PrivateRoute component) */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
+            path="/create-form" 
+            element={
+              <PrivateRoute>
+                <CreateFormPage />
+              </PrivateRoute>
+            } 
+          />
+          <Route path="/form/:formId" element={<FormPage />} />
 
-        {/* Catch-all route for 404 */}
-        <Route path="*" element={<NotFoundPage />} />
+          {/* Catch-all route for unknown paths */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </div>

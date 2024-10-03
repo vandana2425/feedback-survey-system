@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Alert, Link } from '@mui/material';
-import { makeStyles } from '@mui/styles'; // Correct import
+import { Container, TextField, Button, Typography, Alert, Link, CircularProgress } from '@mui/material';
+import { makeStyles } from '@mui/styles';
 import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../apiServices';
+import { register } from '../services/authService';
 
 // Create custom styles using makeStyles hook
 const useStyles = makeStyles({
@@ -24,6 +24,9 @@ const useStyles = makeStyles({
     width: '100%',
     marginTop: '20px',
     color: '#fff',
+    '&:hover': {
+      backgroundColor: '#00695c',
+    },
   },
   inputField: {
     marginBottom: '20px',
@@ -40,14 +43,28 @@ function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loadingLocal, setLoadingLocal] = useState(false);
   const navigate = useNavigate();
 
+  // Helper function to validate email
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleRegister = async () => {
+    if (!email || !password) {
+      setError('Both email and password are required');
+      return;
+    }
+
+    setError('');
+    setLoadingLocal(true);
+
     try {
-      await registerUser({ email, password });
+      await register({ email, password });
       navigate('/login');
     } catch (error) {
       setError('Registration failed: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoadingLocal(false);
     }
   };
 
@@ -57,16 +74,19 @@ function RegisterPage() {
         Sign Up
       </Typography>
 
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && <Alert severity="error" sx={{ marginBottom: '16px' }}>{error}</Alert>}
 
       <TextField
         label="Email"
         fullWidth
         margin="normal"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        error={!!error && !email}
-        helperText={(!email && error) ? 'Email is required' : ''}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          setError(''); // Clear error on input change
+        }}
+        error={!!error && (!email || !isValidEmail(email))} // Validate email format
+        helperText={(!email && error) ? 'Email is required' : (!isValidEmail(email) && 'Invalid email format')}
         className={classes.inputField}
       />
 
@@ -76,7 +96,10 @@ function RegisterPage() {
         fullWidth
         margin="normal"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => {
+          setPassword(e.target.value);
+          setError(''); // Clear error on input change
+        }}
         error={!!error && !password}
         helperText={(!password && error) ? 'Password is required' : ''}
         className={classes.inputField}
@@ -86,8 +109,9 @@ function RegisterPage() {
         variant="contained"
         className={classes.button}
         onClick={handleRegister}
+        disabled={loadingLocal} // Disable while loading
       >
-        Sign Up
+        {loadingLocal ? <CircularProgress size={24} color="inherit" /> : 'Sign Up'}
       </Button>
 
       <Typography variant="body2" sx={{ marginTop: 2 }}>

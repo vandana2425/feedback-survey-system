@@ -2,7 +2,7 @@ import axios from 'axios';
 import authService from './authService'; // Assuming you have an authService to handle token refresh
 
 const api = axios.create({
-  baseURL: 'https://feedback-survey-system.onrender.com', // Replace with your backend URL
+  baseURL: process.env.REACT_APP_API_BASE_URL, // Replace with your backend URL
 });
 
 // Interceptor to handle token refresh on 401 errors
