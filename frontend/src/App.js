@@ -12,25 +12,21 @@ import FormCreatedPage from './components/Form/FormCreatedPage';
 import Layout from './components/layout/Layout';
 import ResponsesPage from './components/Response/ResponsesPage';
 import { setupAxiosInterceptors } from './services/authService';
-import { useAuth } from './context/AuthContext'; // To get auth context
+import { useAuth } from './context/AuthContext';
 
 function App() {
-  const navigate = useNavigate(); // Get the navigate function from react-router
-  const { auth } = useAuth(); // Access the authentication state
+  const navigate = useNavigate();
+  const { auth } = useAuth();
 
   useEffect(() => {
-    // Setup Axios interceptors to handle token expiration and redirection
-    setupAxiosInterceptors(navigate);
-  }, [navigate]); // Pass navigate as a dependency
+    setupAxiosInterceptors(navigate);  // Setting up interceptors to handle token logic
+  }, [navigate]);
 
   return (
     <div>
       <Routes>
-        {/* Public routes wrapped inside Layout for consistent structure */}
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
-          
-          {/* Redirect to dashboard if user is logged in */}
           <Route 
             path="/login" 
             element={auth ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
@@ -39,11 +35,10 @@ function App() {
             path="/register" 
             element={auth ? <Navigate to="/dashboard" replace /> : <RegisterPage />} 
           />
-          
           <Route path="/form-created" element={<FormCreatedPage />} />
           <Route path="/responses/:formId" element={<ResponsesPage />} />
 
-          {/* Private routes (Protected with PrivateRoute component) */}
+          {/* Private Routes */}
           <Route 
             path="/dashboard" 
             element={
@@ -61,8 +56,6 @@ function App() {
             } 
           />
           <Route path="/form/:formId" element={<FormPage />} />
-
-          {/* Catch-all route for unknown paths */}
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
