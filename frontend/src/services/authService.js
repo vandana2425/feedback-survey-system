@@ -86,7 +86,15 @@ export const isAuthenticated = () => {
 // Get the currently logged-in user from localStorage
 export const getCurrentUser = () => {
   const user = localStorage.getItem('authUser');
-  return user ? JSON.parse(user) : null;
+  if (user && user !== 'undefined') {
+    try {
+      return JSON.parse(user);
+    } catch (error) {
+      console.error('Error parsing authUser:', error);
+      return null;
+    }
+  }
+  return null;
 };
 
 // Function to get a specific form by ID
@@ -146,8 +154,8 @@ export const getDashboard = async () => {
 export const handleErrors = (error) => {
   console.error('Error:', error.response?.data || error.message);
   if (error.response && error.response.status === 401) {
-    logout();
-    window.location.href = '/login';
+    console.error('Token expired or unauthorized access. Logging out...');
+    logout(); // Logout if unauthorized or token is invalid
   }
 };
 
@@ -155,10 +163,24 @@ export const getToken = () => {
   return localStorage.getItem('authToken');
 };
 
-export const refreshToken = async (refreshToken) => {
+export const refreshToken = async () => {
+  const token = getToken();
+  if (!token) {
+    throw new Error('User is not authenticated');
+  }
+
   try {
-    const response = await api.post('/users/refresh-token', { token: refreshToken });
-    return response.data.token;
+    const response = await api.post('/refresh-token', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data.token) {
+      localStorage.setItem('authToken', response.data.token); // Update the token in localStorage
+    }
+
+    return response.data;
   } catch (error) {
     console.error('Error refreshing token:', error.response?.data || error.message);
     throw error;
