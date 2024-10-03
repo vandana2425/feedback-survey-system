@@ -4,7 +4,7 @@ let navigateRef = null; // Global reference for the navigate function
 
 // Create an instance of axios with the base URL from environment variables
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL,
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000', // Add fallback URL if env variable is not available
 });
 
 // Function to setup Axios interceptors with navigate function
@@ -72,7 +72,7 @@ export const login = async (credentials) => {
 export const logout = () => {
   localStorage.removeItem('authToken');
   localStorage.removeItem('authUser');
-  window.location.href = '/';
+  window.location.href = '/login';
   console.log('User logged out successfully.');
 };
 
@@ -159,10 +159,12 @@ export const handleErrors = (error) => {
   }
 };
 
+// Function to get the token from localStorage
 export const getToken = () => {
   return localStorage.getItem('authToken');
 };
 
+// Function to refresh token if it expires
 export const refreshToken = async () => {
   const token = getToken();
   if (!token) {
@@ -187,7 +189,7 @@ export const refreshToken = async () => {
   }
 };
 
-
+// Export the auth service methods
 export const authService = {
   setupAxiosInterceptors,
   register,
